@@ -11,7 +11,8 @@ class TCNNConfig(object):
     # seq_length = 600
     num_classes = 20  # 类别数
     # num_classes = 10
-    num_filters = 256  # 卷积核数目
+    num_filters = 64  # 卷积核数目
+    # num_filters = 256
     kernel_size = 5  # 卷积核尺寸
     vocab_size = 843  # 词汇表大小
     # vocab_size = 5000
@@ -23,10 +24,11 @@ class TCNNConfig(object):
     learning_rate = 1e-3  # 学习率
 
     batch_size = 64  # 每批训练大小
-    num_epochs = 1  # 总迭代轮次
+    num_epochs = 10  # 总迭代轮次
     # num_epochs = 10
 
-    print_per_batch = 100  # 每多少轮输出一次结果
+    print_per_batch = 50  # 每多少轮输出一次结果
+    # print_per_batch = 100
     save_per_batch = 10  # 每多少轮存入tensorboard
 
 
