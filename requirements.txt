@@ -1,4 +1,6 @@
 scikit-learn
 scipy
 numpy
+
 tensorflow
+matplotlib

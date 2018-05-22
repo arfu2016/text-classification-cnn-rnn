@@ -168,6 +168,21 @@ def test():
         }
         y_pred_cls[start_id:end_id] = session.run(model.y_pred_cls, feed_dict=feed_dict)
 
+    all_params = tf.trainable_variables()
+    param = [v for v in all_params]
+    param_name = [v.name for v in all_params]
+    param_shape = [session.run(tf.shape(v)) for v in all_params]
+    embedding_param_num = np.prod(param_shape[0])
+    cnn_param_num = sum([np.prod(v) for v in param_shape[1:5]])
+    param_num = sum([np.prod(session.run(tf.shape(v))) for v in all_params])
+
+    print('Parameter tensors:', param)
+    print('Names of parameter tensors:', param_name)
+    print('Shapes of parameter tensors:', param_shape)
+    print('Number of embedding parameters:', embedding_param_num)
+    print('Number of lstm parameters:', cnn_param_num)
+    print('Total number of parameters:', param_num)
+
     # 评估
     print("Precision, Recall and F1-Score...")
     print(metrics.classification_report(y_test_cls, y_pred_cls, target_names=categories))
