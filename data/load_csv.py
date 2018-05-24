@@ -93,12 +93,15 @@ def filter_intent(filename):
             question_set.add(q)
 
     print('number of samples after removing duplicated questions:',
-          len(tpl_intent))
+          len(qti))
 
     print('Samples of questions:')
     pprint.pprint(qti[0:10])
 
     ti = [(t, i) for q, t, i in qti if type(t) is str]
+    ti = [(t, i) for t, i in ti if len(t) > 0]
+    print('number of samples having no templates:', len(qti) - len(ti))
+
     ti = {t: i for t, i in ti if len(t) > 0}
     ti = list(ti.items())
 

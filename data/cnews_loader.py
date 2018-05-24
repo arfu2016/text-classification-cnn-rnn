@@ -84,7 +84,7 @@ def read_vocab(vocab_dir):
 def read_category():
     """读取分类目录，固定"""
     # categories = ['体育', '财经', '房产', '家居', '教育', '科技', '时尚', '时政', '游戏', '娱乐']
-    categories = [str(i) for i in range(1, 21)]
+    categories = [str(i) for i in range(1, 31)]  # range(1, 21)
 
     categories = [native_content(x) for x in categories]
 
