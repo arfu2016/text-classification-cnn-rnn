@@ -67,6 +67,7 @@ class TextCNN(object):
 
             # 分类器
             self.logits = tf.layers.dense(fc, self.config.num_classes, name='fc2')
+            self.pred_prob = tf.reduce_max(tf.nn.softmax(self.logits), axis=1)
             self.y_pred_cls = tf.argmax(tf.nn.softmax(self.logits), 1)  # 预测类别
 
         with tf.name_scope("optimize"):
@@ -78,5 +79,6 @@ class TextCNN(object):
 
         with tf.name_scope("accuracy"):
             # 准确率
-            correct_pred = tf.equal(tf.argmax(self.input_y, 1), self.y_pred_cls)
+            correct_pred = tf.equal(
+                tf.argmax(self.input_y, 1), self.y_pred_cls)
             self.acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))

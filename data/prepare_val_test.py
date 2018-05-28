@@ -11,6 +11,7 @@ import sys
 import logging
 import string
 import random
+import pickle
 from collections import Counter
 
 import pprint
@@ -143,3 +144,12 @@ if __name__ == '__main__':
     print('Val and test samples:')
     pprint.pprint(compliment_data)
     print()
+
+    categories, _ = zip(*intent_int2)
+    print('Categories:')
+    pprint.pprint(categories)
+    print()
+
+    file_name = os.path.join(file_dir, 'raw/categories.pkl')
+    with open(file_name, 'wb') as f:
+        pickle.dump(categories, f)
