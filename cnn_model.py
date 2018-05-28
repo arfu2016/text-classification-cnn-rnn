@@ -67,7 +67,10 @@ class TextCNN(object):
 
             # 分类器
             self.logits = tf.layers.dense(fc, self.config.num_classes, name='fc2')
+
             self.pred_prob = tf.reduce_max(tf.nn.softmax(self.logits), axis=1)
+            # 所预测类别的概率，在predict过程中要用到，added by deco@cubee
+
             self.y_pred_cls = tf.argmax(tf.nn.softmax(self.logits), 1)  # 预测类别
 
         with tf.name_scope("optimize"):

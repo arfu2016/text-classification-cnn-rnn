@@ -3,7 +3,7 @@
 @Module    : predict_cnn.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 5/28/18 1:32 PM
-@Desc      : 
+@Desc      : Intent classification by a cnn model
 """
 import logging
 import os
@@ -35,17 +35,13 @@ def process_sentences(sentences, word_to_id, max_length=600):
 
     # 使用keras提供的pad_sequences来将文本pad为固定长度
     x_pad = kr.preprocessing.sequence.pad_sequences(data_id, max_length)
-    # y_pad = kr.utils.to_categorical(label_id, num_classes=len(cat_to_id))
-    # # 将标签转换为one-hot表示
 
     return x_pad
 
 
-def clean_sentence(st):
+def clean_sentence(st: str)-> str:
     """
     数据预处理
-    :param st: string
-    :return: string
     """
     in_tab = string.punctuation + '。，“”‘’（）：；？·—《》【】、\n'
     pt = set(p for p in in_tab)
@@ -103,7 +99,6 @@ class CnnClassifer:
                                    self.config.seq_length)
         feed_dict = {
             self.model.input_x: x_test,
-            # model.input_y: y_batch,
             self.model.keep_prob: 1.0
         }
 

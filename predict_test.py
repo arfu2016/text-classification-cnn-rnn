@@ -3,7 +3,7 @@
 @Module    : predict_test.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 5/28/18 2:25 PM
-@Desc      : 
+@Desc      : Test intent classification
 """
 import os
 import sys
