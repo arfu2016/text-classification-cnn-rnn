@@ -12,8 +12,10 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from time import time
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
+from functools import reduce
 
 import spacy
+from joblib import Parallel, delayed
 
 spacy.info()
 spacy.info('en_core_web_md')
@@ -87,10 +89,32 @@ def serial_func(cls, st):
         func(cls, st)
 
 
+def run_pipeline(func, cls, st):
+    return func(cls, st)
+
+
 def parallel_func(cls, st, executor):
     future = executor.submit(serial_func, cls, st)
     # print(future.result())
     return future.result()
+
+
+def joblib_multi_process(cls, st):
+    do = delayed(run_pipeline)
+    executor = Parallel(n_jobs=4)
+    tasks = (do(func, cls, st)
+             for func in [pipeline_tagger_parser_ner, pipeline_tokenizer])
+    r = executor(tasks)
+    return r
+
+
+def joblib_multi_process_for_multi_thread(cls, st):
+    do = delayed(run_pipeline)
+    executor = Parallel(n_jobs=2)
+    tasks = (do(func, cls, st)
+             for func in [map_func_multi_thread, serial_func2])
+    r = executor(tasks)
+    return r
 
 
 def pipeline_tagger_parser_ner(cls, st):
@@ -145,6 +169,10 @@ def func_runtime(func, n_iter, *args):
     return "Average %.5fs in %d loops" % (runtime, n_iter)
 
 
+def construct_list(x, y):
+    return [x, y]
+
+
 if __name__ == '__main__':
     # load_simple()
     # load_pipeline()
@@ -164,17 +192,29 @@ if __name__ == '__main__':
     print('multi_thread:')
     print(map_func_multi_thread(cls0, st0))
     print()
+    res = map_func_multi_thread(cls0, st0)
+    print(reduce((lambda x, y: construct_list(x, y)), res))
+    print()
     print(parallel_func(cls0, st0, multi_thread))
     print()
 
     print('multi_process:')
     print(parallel_func(cls0, st0, multi_process))
     print()
+    print(joblib_multi_process(cls0, st0))
+    print()
+    res = joblib_multi_process(cls0, st0)
+    print(reduce((lambda x, y: construct_list(x, y)), res))
+    print()
+    print(joblib_multi_process_for_multi_thread(cls0, st0))
+    print()
     # print(map_func_multi_process(cls0, st0))
     # print()
 
     print('func_runtime:')
     print(func_runtime(map_func_multi_thread, 2, cls0, st0))
+    print()
+    print(func_runtime(joblib_multi_process, 2, cls0, st0))
     print()
     # print(func_runtime(map_func_multi_process, 2, cls0, st0))
     # print()
