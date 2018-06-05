@@ -49,6 +49,22 @@ def load_pipeline2():
     return doc
 
 
+def load_pipeline3():
+    lang = 'en'
+    cls = spacy.util.get_lang_class(lang)
+    nlp = cls()
+    model_data_path = ('/home/deco/miniconda2/envs/tf17/lib/python3.6/'
+                       'site-packages/en_core_web_md/en_core_web_md-2.0.0')
+    nlp.from_disk(model_data_path)
+
+    doc = nlp('This is a sentence')
+    print('token:')
+    for token in doc:
+        print(token.text)
+    return doc
+
+
 if __name__ == '__main__':
     load_pipeline()
     load_pipeline2()
+    load_pipeline3()
