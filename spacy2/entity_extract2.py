@@ -58,6 +58,8 @@ class EntityMatcher(object):
             doc.ents = list(doc.ents) + [span]
             # a property setter is used here
             # 适用于span与之前的doc.ents没有重叠的情况，否则非常复杂
+            # 当然，即使span与之前的doc.ents有重叠，也可以展示给用户，或者把这些抽出来
+            # 的实体交给模型来训练，模型的预测结果不可能有实体的重叠
             # doc.ents = list(doc.ents)
             # print('type of doc.ents:', type(doc.ents))
             # doc.ents.append(span)
@@ -106,7 +108,7 @@ def train_position_text(raw_text, entity_p):
     # print(temp)
     train_data = [
         (raw_text, {'entities': [(start_p, end_p, entity)
-                                 for entity, start_p, end_p in entity_p]})]
+                                 for start_p, end_p, entity in entity_p]})]
     return train_data
 
 
@@ -133,10 +135,11 @@ def load_pipeline(remove_matcher=False):
     train_text = "Uber blew through $1 million"
     print(1)
     train_data = train_matcher_text(nlp, train_text)
+    print('train_data:', train_data)
     print(2)
     nlp = retrain_entity(nlp, train_data, 'ACTION')
     print(3)
-    train_data = train_position_text('I am buying books', [('ACTION', 5, 11)])
+    train_data = train_position_text('I am buying books', [(5, 11, 'ACTION')])
     nlp = retrain_entity(nlp, train_data)
 
     if remove_matcher:
@@ -149,6 +152,13 @@ def load_pipeline(remove_matcher=False):
         nlp.from_disk(model_data_path)
         nlp.add_pipe(ner)
 
+    return nlp
+
+
+def modify_ner_model(nlp):
+    train_data = train_position_text('Uber blew through $1 million',
+                                     [(0, 4, 'ORG'), (18, 28, 'MONEY')])
+    nlp = retrain_entity(nlp, train_data)
     return nlp
 
 
@@ -181,4 +191,6 @@ if __name__ == '__main__':
     # nlp0 = load_pipeline(remove_matcher=False)
     nlp0 = load_pipeline(remove_matcher=True)
     print('nlp0:', nlp0.pipe_names)  # the components in the pipeline
-    process_text(nlp0)
+    nlp1 = modify_ner_model(nlp0)
+    print('nlp1:', nlp1.pipe_names)
+    process_text(nlp1)
