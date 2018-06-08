@@ -1,0 +1,159 @@
+"""
+@Project   : text-classification-cnn-rnn
+@Module    : test_es.py
+@Author    : Deco [deco@cubee.com]
+@Created   : 6/8/18 2:01 PM
+@Desc      : 
+"""
+import json
+import requests
+import pprint
+from elasticsearch import Elasticsearch
+
+es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+
+def check_es():
+    res = requests.get('http://localhost:9200')
+    content_string = res.content.decode('utf-8')
+    pprint.pprint(json.loads(content_string))
+
+
+def put_data():
+    r = requests.get('http://localhost:9200')
+    i = 1
+    while r.status_code == 200 and i <= 20:
+        r = requests.get('http://swapi.co/api/people/' + str(i))
+        es.index(index='sw', doc_type='people', id=i,
+                 body=json.loads(r.content))
+        print(i)
+        i = i + 1
+
+
+def put_data1():
+    r = requests.get('http://localhost:9200')
+    i = 1
+    while r.status_code == 200 and i <= 20:
+        update = {"doc": {"person_id": i}}
+        r = requests.get('http://swapi.co/api/people/' + str(i))
+        es.update(index='sw', doc_type='people', id=i,
+                  body=update)
+        print(i)
+        i = i + 1
+
+
+def put_data2():
+    r = requests.get('http://localhost:9200')
+    i = 18
+    while r.status_code == 200 and i <= 40:
+        r = requests.get('http://swapi.co/api/people/' + str(i))
+        es.index(index='sw', doc_type='people', id=i,
+                 body=json.loads(r.content))
+        print(i)
+        i = i + 1
+
+
+def put_data3():
+    r = requests.get('http://localhost:9200')
+    i = 41
+    while r.status_code == 200 and i <= 60:
+        r = requests.get('http://swapi.co/api/people/' + str(i))
+        es.index(index='sw', doc_type='people', id=i,
+                 body=json.loads(r.content))
+        print(i)
+        i = i + 1
+
+
+def search_data1():
+    p5 = es.get(index='sw', doc_type='people', id=5)
+    pprint.pprint(p5)
+
+
+def search_data2():
+    p = es.search(index="sw",
+                  body={"query": {"match": {'name': 'Darth Vader'}}})
+    pprint.pprint(p)
+
+
+def search_data3():
+    r = requests.get('http://localhost:9200/_count?pretty')
+    pprint.pprint(json.loads(r.content))
+
+
+def search_data4():
+    p = es.search(index="sw",
+                  body={"query": {"match_all": {}},
+                        "sort": {"height.raw": {"order": "desc"}}})
+    pprint.pprint(p)
+
+
+def search_data5():
+    p = es.search(index="sw",
+                  body={"query": {"match_all": {}},
+                        "sort": {"person_id": {"order": "desc"}}})
+    pprint.pprint(p)
+
+
+def search_data6():
+    p = es.search(index="sw", body={"query": {"prefix": {"name": "lu"}}})
+    pprint.pprint(p)
+
+
+def search_data7():
+    p = es.search(index="sw",
+                  body={"query": {"fuzzy": {"name": "jaba"}}})
+    pprint.pprint(p)
+
+
+def view_mapping():
+    r = requests.get('http://localhost:9200/sw/_mapping/people')
+    pprint.pprint(json.loads(r.content))
+
+
+def create_mapping():
+    mapping = {
+        "mappings": {
+            "people": {
+                "properties": {
+                    "height": {
+                        "type": "text",
+                        "fields": {
+                            "raw": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    setting = {
+        "mappings": {
+            "people": {
+                "properties": {
+                    "person_id": {
+                        "type": "integer",
+                    }
+                }
+            }
+        }
+    }
+
+    # es.indices.create(index='sw', ignore=400, body=mapping)
+    # es.indices.create(index='sw', body=mapping)
+    es.indices.create(index='sw', body=setting)
+
+
+def del_sw():
+    es.indices.delete(index='sw', ignore=[400, 404])
+
+
+if __name__ == '__main__':
+    # del_sw()
+
+    # create_mapping()
+    # put_data()
+    # put_data1()
+
+    search_data7()
