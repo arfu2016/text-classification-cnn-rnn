@@ -149,11 +149,18 @@ def del_sw():
     es.indices.delete(index='sw', ignore=[400, 404])
 
 
+def del_megacorp():
+    es.indices.delete(index='megacorp', ignore=[400, 404])
+
+
 if __name__ == '__main__':
     # del_sw()
 
     # create_mapping()
     # put_data()
     # put_data1()
+
+    # del_megacorp()
+    # search_data3()
 
     search_data7()
