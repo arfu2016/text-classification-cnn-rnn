@@ -9,11 +9,12 @@ import os
 import pickle
 import json
 
-from elasticsearch import Elasticsearch
+import elasticsearch
+from elasticsearch.helpers import bulk
 import requests
 import pprint
 
-es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+es = elasticsearch.Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
 
 def put_data(tpl_intent_entity):
@@ -23,6 +24,47 @@ def put_data(tpl_intent_entity):
                  body=tie)
         if i % 200 == 0:
             print(i)
+        i = i + 1
+
+
+def set_data(tpl_intent_entity, index_name="aiball", doc_type_name="template"):
+    """https://github.com/elastic/elasticsearch-py/issues/508"""
+    for idx, tie in enumerate(tpl_intent_entity):
+        yield {
+            "_index": index_name,
+            "_type": doc_type_name,
+            "_id": idx,
+            "_source": tie
+        }
+
+
+def bulk_put(tpl_intent_entity, **kwargs):
+    success, _ = bulk(es, set_data(tpl_intent_entity, **kwargs))
+    print("insert %s lines" % success)
+
+
+def update_data():
+    i = 1
+    while i <= 20:
+        update = {"doc": {"tpl_id": i}}
+        es.update(index='aiball', doc_type='template', id=i,
+                  body=update, version=1, version_type='internal')
+        print(i)
+        i = i + 1
+    # Optimistic concurrency control: 解决并发矛盾问题
+
+
+def update_data2():
+    i = 1
+    while i <= 20:
+        update = {"script": "ctx._source.tpl_id+=1",
+                  "upsert": {
+                      "tpl_id": 0
+                  }
+                  }
+        es.update(index='aiball', doc_type='template', id=i,
+                  body=update)
+        print(i)
         i = i + 1
 
 
@@ -46,6 +88,11 @@ def create_mapping():
         }
     }
     es.indices.create(index='aiball', body=setting)
+    # create mapping必须针对一个index，一个indix下所有的type都是相同的设置
+    # 这也是elastic7.0准备去掉type的原因
+    # storing different entities that have few or no fields in common in the
+    # same index leads to sparse data and interferes with Lucene’s ability
+    # to compress documents efficiently.
 
 
 def dict2es():
@@ -62,7 +109,23 @@ def dict2es():
 
     create_mapping()
 
-    put_data(template_intent_entity)
+    # put_data(template_intent_entity)
+    bulk_put(template_intent_entity)
+
+
+def search_data0():
+    res = requests.get(
+        'http://localhost:9200/aiball/_search?q=PERSON&size=5&pretty')
+    pprint.pprint(json.loads(res.content))
+
+
+def search_data():
+    # p5 = es.get(index='aiball', doc_type='template')
+    # pprint.pprint(p5)
+    res = requests.get(
+        'http://localhost:9200/aiball/_search?size=5&from=10&pretty')
+    # content_string = res.content.decode('utf-8')
+    pprint.pprint(json.loads(res.content))
 
 
 def search_data1():
@@ -112,13 +175,80 @@ def search_data3():
 def search_data4():
     p = es.search(index="aiball",
                   doc_type="template",
-                  body={"query": {"bool": {
-                      "must": {"match": {"template": "{TEAM}的{PERSON}是谁"}},
-                      "filter": {"bool": {"must": [
+                  body={"_source": ["intent", "template"],
+                        "query": {"bool": {
+                         "must": {"match": {"template": "{TEAM}的{PERSON}是谁"}},
+                         "filter": {"bool": {"must": [
                           {"term": {"entity_count": 2}},
                           {"term": {"entities": "PERSON"}},
                           {"term": {"entities": "TEAM"}},
-                      ]}}}}})
+                         ]}}}}})
+    pprint.pprint(p)
+
+
+def search_data5():
+    p = es.search(index="aiball",
+                  doc_type="template",
+                  body={"_source": ["intent", "template"],
+                        "query": {"bool": {"must": {
+                         "more_like_this":
+                         {"fields": ["template"],
+                             "like": "{TEAM}的{PERSON}",
+                             "min_term_freq": 1,  # "min_term_freq": 2,
+                             "max_query_terms": 12}},
+                         "filter": {"bool": {"must": [
+                          {"term": {"entity_count": 2}},
+                          {"term": {"entities": "PERSON"}},
+                          {"term": {"entities": "TEAM"}},
+                         ]}}}}})
+    pprint.pprint(p)
+
+
+def search_data6():
+    p = es.search(index="aiball",
+                  doc_type="template",
+                  body={"_source": ["intent", "template"],
+                        "query": {"bool": {"must": {
+                         "more_like_this":
+                         {"fields": ["template"],
+                             "like": ["教练", "主帅"],
+                             "min_term_freq": 1,  # "min_term_freq": 2,
+                             "max_query_terms": 12}},
+                         "filter": {"bool": {"must": [
+                          {"term": {"entity_count": 2}},
+                          {"term": {"entities": "PERSON"}},
+                          {"term": {"entities": "TEAM"}},
+                         ]}}}}})
+    pprint.pprint(p)
+
+
+def search_data7():
+    p = es.search(index="aiball",
+                  doc_type="template",
+                  body={"_source": ["intent", "template"],
+                        "query": {"bool": {"must": {
+                         "more_like_this":
+                         {"fields": ["template"],
+                             "like": ["克韩", "可汗"],
+                             "min_term_freq": 1,  # "min_term_freq": 2,
+                             "max_query_terms": 12}},
+                         }}})
+    pprint.pprint(p)
+
+
+def word_cloud():
+    p = es.search(index="aiball",
+                  doc_type="template",
+                  body={
+                            "aggs": {
+                                "tagcloud": {
+                                    "terms": {
+                                        "field": "entities",
+                                        "size": 10
+                                    }
+                                }
+                            },
+                         })
     pprint.pprint(p)
 
 
@@ -133,8 +263,22 @@ def view_mapping():
 if __name__ == '__main__':
 
     # del_aiball()
-
     # dict2es()
+
+    # try:
+    #     update_data()
+    # except elasticsearch.exceptions.ConflictError:
+    #     # exceptions could be a module, and ConflictError is a class
+    #     # in that module
+    #     # exceptions could be a pacakge, ConflictError is a class
+    #     # in the __init__.py of that package
+    #     update_data2()
+
+    # print('Search the _all filed:')
+    # search_data0()
+
+    # print('Samples from aiball/template:')
+    # search_data()
 
     # print('Number of samples in aiball/template:')
     # count_data()
@@ -144,11 +288,17 @@ if __name__ == '__main__':
     # print('Mapping of aiball/template:')
     # view_mapping()
 
-    print('Approximate search for {TEAM}的{PERSON}:')
-    search_data2()
+    # print('Approximate search for {TEAM}的{PERSON}:')
+    # search_data2()
+    # print('Exact search for {TEAM}的{PERSON}:')
+    # search_data3()
+    # print('Approximate search for {TEAM}的{PERSON}是谁:')
+    # search_data4()
 
-    print('Exact search for {TEAM}的{PERSON}:')
-    search_data3()
+    print('More like this:')
+    # search_data5()
+    # search_data6()
+    search_data7()
 
-    print('Approximate search for {TEAM}的{PERSON}是谁:')
-    search_data2()
+    print('Word cloud:')
+    word_cloud()

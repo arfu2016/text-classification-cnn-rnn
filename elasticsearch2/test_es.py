@@ -3,7 +3,17 @@
 @Module    : test_es.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/8/18 2:01 PM
-@Desc      : 
+@Desc      :
+When you search within a single index, Elasticsearch forwards the search
+request to a primary or replica of every shard in that index, and then gathers
+the results from each shard.
+在linux中应该是用多进程在处理
+Searching one index that has five primary shards is exactly equivalent to
+searching five indices that have one primary shard each.
+都是5个进程来处理？
+You can see that, in a distributed system, the cost of sorting results grows
+exponentially the deeper we page. There is a good reason that web search
+engines don’t return more than 1,000 results for any query.
 """
 import json
 import requests
