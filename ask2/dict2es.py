@@ -244,12 +244,12 @@ def word_cloud():
                                 "tagcloud": {
                                     "terms": {
                                         "field": "entities",
-                                        "size": 10
+                                        "size": 20
                                     }
                                 }
                             },
                          })
-    pprint.pprint(p)
+    pprint.pprint(p['aggregations'])
 
 
 def del_aiball():
