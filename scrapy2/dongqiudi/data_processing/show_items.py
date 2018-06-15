@@ -19,5 +19,7 @@ if __name__ == '__main__':
     with open(fn, encoding='utf-8') as f:
         items = json.load(f)
 
+    print('Number of items:', len(items))
+
     for item in items:
         pprint.pprint(item)

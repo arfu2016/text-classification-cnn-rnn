@@ -14,6 +14,7 @@ class DongqiudiItem(scrapy.Item):
     title = scrapy.Field()
     description = scrapy.Field()
     url = scrapy.Field()
+    display_time = scrapy.Field()
 
     page_url = scrapy.Field()
     project = scrapy.Field()

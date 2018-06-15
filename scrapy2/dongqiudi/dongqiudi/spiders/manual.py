@@ -14,15 +14,6 @@ from scrapy.loader import ItemLoader
 from ..items import DongqiudiItem
 
 
-def parse(response):
-    item = DongqiudiItem()
-    item['title'] = response.xpath(
-        '//*[@id="news_list"]/ol/li[1]/h2/a/text()').extract()
-    item['url'] = response.xpath(
-        '//*[@id="news_list"]/ol/li[1]/h2/a/@href').extract()
-    return item
-
-
 class BasicSpider(scrapy.Spider):
     name = 'manual'
     allowed_domains = ['www.dongqiudi.com']
@@ -61,6 +52,7 @@ class BasicSpider(scrapy.Spider):
         l_item.add_value('title', item['title'].strip())
         l_item.add_value('description', item['description'])
         l_item.add_value('url', item['web_url'])
+        l_item.add_value('display_time', item['display_time'])
 
         l_item.add_value('page_url', response.url)
         l_item.add_value('project', self.settings.get('BOT_NAME'))
