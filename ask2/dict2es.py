@@ -133,6 +133,15 @@ def search_data1():
     pprint.pprint(p5)
 
 
+def search_data_test():
+    p = es.search(index="aiball",
+                  doc_type="template",
+                  body={"query": {"bool": {"filter": {"bool": {"must": [
+                      {"term": {"template.keyword": "测试"}},
+                  ]}}}}})
+    pprint.pprint(p)
+
+
 def search_data2():
     p = es.search(index="aiball",
                   doc_type="template",
@@ -295,10 +304,12 @@ if __name__ == '__main__':
     # print('Approximate search for {TEAM}的{PERSON}是谁:')
     # search_data4()
 
-    print('More like this:')
+    # print('More like this:')
     # search_data5()
     # search_data6()
-    search_data7()
+    # search_data7()
 
-    print('Word cloud:')
-    word_cloud()
+    # print('Word cloud:')
+    # word_cloud()
+
+    search_data_test()

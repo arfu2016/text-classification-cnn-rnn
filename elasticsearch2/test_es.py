@@ -29,6 +29,12 @@ def check_es():
     pprint.pprint(json.loads(content_string))
 
 
+def list_indices():
+    res = requests.get('http://localhost:9200/_cat/indices?v')
+    print(res.content.decode('utf-8'))
+    # print(res.content)
+
+
 def put_data():
     r = requests.get('http://localhost:9200')
     i = 1
@@ -173,4 +179,6 @@ if __name__ == '__main__':
     # del_megacorp()
     # search_data3()
 
-    search_data7()
+    # search_data7()
+
+    list_indices()
