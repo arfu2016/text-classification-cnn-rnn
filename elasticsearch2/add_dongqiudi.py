@@ -30,13 +30,21 @@ def put_data(tpl_intent_entity):
 
 def set_data(list_data_dict, index_name="dongqiudi", doc_type_name="news"):
     """https://github.com/elastic/elasticsearch-py/issues/508"""
-    for idx, data_dict in enumerate(list_data_dict):
+
+    for data_dict in list_data_dict:
         yield {
             "_index": index_name,
             "_type": doc_type_name,
-            "_id": idx,
             "_source": data_dict
         }
+
+    # for idx, data_dict in enumerate(list_data_dict):
+    #     yield {
+    #         "_index": index_name,
+    #         "_type": doc_type_name,
+    #         "_id": idx,
+    #         "_source": data_dict
+    #     }
 
 
 def bulk_put(tpl_intent_entity, **kwargs):
@@ -66,24 +74,30 @@ def construct_query(list_data_dict):
 def check_existence(list_data_dict):
     res = es.msearch(body=construct_query(list_data_dict))
     # pprint.pprint(res)
-    print([item['hits']['total'] for item in res['responses']])
+    return [item['hits']['total'] for item in res['responses']]
 
 
 def test_check_existence():
     file_dir = os.path.dirname(os.path.dirname(__file__))
     fn = os.path.join(file_dir, 'scrapy2/dongqiudi/items.json')
-
     with open(fn, 'r', encoding='utf-8') as f:
         list_news_dict = json.load(f)
-    check_existence(list_news_dict)
+
+    tags = check_existence(list_news_dict)
+    list_news_dict = [news_dict for idx, news_dict in enumerate(list_news_dict)
+                      if tags[idx] == 0]
+    # print('list_news_dict in test_check_existence():')
+    # pprint.pprint(list_news_dict)
+
+    bulk_put(list_news_dict)
 
 
 def dict2es():
     file_dir = os.path.dirname(os.path.dirname(__file__))
     fn = os.path.join(file_dir, 'scrapy2/dongqiudi/items.json')
-
     with open(fn, 'r', encoding='utf-8') as f:
         list_news_dict = json.load(f)
+
     bulk_put(list_news_dict)
 
 
@@ -127,7 +141,13 @@ def set_logger():
     return logger
 
 
+def del_dongqiudi():
+    es.indices.delete(index='dongqiudi', ignore=[400, 404])
+
+
 if __name__ == '__main__':
+    # del_dongqiudi()
+
     # dict2es()
 
     # search_data()
