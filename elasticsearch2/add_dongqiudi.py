@@ -9,11 +9,13 @@ import os
 import json
 import sys
 import logging
+import string
 
 import elasticsearch
 from elasticsearch.helpers import bulk
 import requests
 import pprint
+import jieba.analyse
 
 es = elasticsearch.Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
@@ -107,6 +109,26 @@ def search_data():
     pprint.pprint(json.loads(res.content))
 
 
+def search_data2():
+    p = es.search(index="dongqiudi",
+                  doc_type="news",
+                  body={"_source": ["title", "description"],
+                        "query": {"match_all": {}},
+                        "size": 1000})
+    # pprint.pprint(p)
+    return p
+
+
+def search_data3():
+    p = es.search(index="dongqiudi",
+                  doc_type="news",
+                  body={"_source": ["title", "description"],
+                        "query": {"bool": {
+                         "must": {"match": {"title": "世界杯"}},
+                        }}})
+    pprint.pprint(p)
+
+
 def count_data():
     logger = set_logger()
     r = requests.get('http://localhost:9200/dongqiudi/_count?pretty')
@@ -145,6 +167,57 @@ def del_dongqiudi():
     es.indices.delete(index='dongqiudi', ignore=[400, 404])
 
 
+def clean_sentence(st):
+    in_tab = string.punctuation + '。，“”‘’（）：；？·—《》、'
+    pt = set(p for p in in_tab)
+    clean = ''.join([c for c in st if c not in pt])
+    # hash search, time complexity m*O(1)
+    return clean
+
+
+def sentence2tags(st):
+    tags = jieba.analyse.extract_tags(st, topK=100,
+                                      allowPOS=(
+                                          'eng', 'n', 'ns', 'nr', 'nt', 'nz',
+                                          'vn', 'vi', 'vq'))
+    # 一方面，用tf-idf提取句中关键词，另一方面，只取句中的英文、名词和动词
+    return tags
+
+
+def update_data():
+    news_dict = search_data2()
+    news_list = news_dict['hits']['hits']
+    for news in news_list:
+        key = news['_source']['title'] + news['_source'].get(
+            'description', [''])
+        key = ' '.join(key)
+        update = {"doc": {"key_tags": sentence2tags(key)}}
+        es.update(index='dongqiudi', doc_type='news', id=news['_id'],
+                  body=update)
+        # , version=1, version_type='internal'
+
+
+def view_mapping():
+    r = requests.get('http://localhost:9200/dongqiudi/_mapping/news')
+    pprint.pprint(json.loads(r.content))
+
+
+def word_cloud():
+    p = es.search(index="dongqiudi",
+                  doc_type="news",
+                  body={
+                            "aggs": {
+                                "tagcloud": {
+                                    "terms": {
+                                        "field": "key_tags.keyword",
+                                        "size": 20
+                                    }
+                                }
+                            },
+                         })
+    pprint.pprint(p['aggregations'])
+
+
 if __name__ == '__main__':
     # del_dongqiudi()
 
@@ -154,4 +227,12 @@ if __name__ == '__main__':
 
     # count_data()
 
-    test_check_existence()
+    # test_check_existence()
+
+    # update_data()
+
+    # view_mapping()
+
+    # word_cloud()
+
+    search_data3()
