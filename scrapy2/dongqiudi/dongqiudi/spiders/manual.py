@@ -3,7 +3,7 @@
 @Module    : manual.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/15/18 2:05 PM
-@Desc      : 
+@Desc      : 爬取json数据，并存入.json文件中
 """
 import socket
 import datetime

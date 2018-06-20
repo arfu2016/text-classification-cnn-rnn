@@ -3,7 +3,7 @@
 @Module    : show_items.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/15/18 10:54 AM
-@Desc      :
+@Desc      : 展示items.json的内容
 scrapy check basic
 scrapy crawl basic -o items.json
 """
@@ -24,5 +24,7 @@ if __name__ == '__main__':
 
         for item in items:
             pprint.pprint(item)
+    except json.decoder.JSONDecodeError:
+        print('No items in items.json')
     except Exception as e:
         print('An exception has occurred -- {}'.format(e))

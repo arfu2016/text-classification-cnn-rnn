@@ -3,7 +3,7 @@
 @Module    : clear_items.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/19/18 11:03 AM
-@Desc      : 
+@Desc      : 手动把存放爬虫内容的文件清空
 """
 
 import os

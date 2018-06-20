@@ -3,7 +3,7 @@
 @Module    : test.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/15/18 2:52 PM
-@Desc      : 
+@Desc      : 爬取并打印json数据，当给出的翻页数字太大时，处理异常情况
 """
 
 import json
