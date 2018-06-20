@@ -3,21 +3,46 @@
 @Module    : add_dongqiudi.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/15/18 4:53 PM
-@Desc      : 
+@Desc      : dongqiudi的es添加数据，词云分析和词汇匹配
 """
-import os
 import json
-import sys
 import logging
+import os
+import pprint
 import string
+import sys
 
 import elasticsearch
-from elasticsearch.helpers import bulk
-import requests
-import pprint
 import jieba.analyse
+import requests
+from elasticsearch.helpers import bulk
 
 es = elasticsearch.Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+
+def set_logger():
+    # for logging
+
+    log_path = 'logs/dongqiudi.txt'  # ''
+
+    program = os.path.basename(sys.argv[0])
+    logger = logging.getLogger(program)
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    if log_path:
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    else:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+    return logger
 
 
 def put_data(tpl_intent_entity):
@@ -54,6 +79,15 @@ def bulk_put(tpl_intent_entity, **kwargs):
     print("insert %s lines" % success)
 
 
+def dict2es():
+    file_dir = os.path.dirname(os.path.dirname(__file__))
+    fn = os.path.join(file_dir, 'scrapy2/dongqiudi/items.json')
+    with open(fn, 'r', encoding='utf-8') as f:
+        list_news_dict = json.load(f)
+
+    bulk_put(list_news_dict)
+
+
 def construct_query(list_data_dict):
 
     search_arr = []
@@ -79,7 +113,7 @@ def check_existence(list_data_dict):
     return [item['hits']['total'] for item in res['responses']]
 
 
-def test_check_existence():
+def append_data():
     file_dir = os.path.dirname(os.path.dirname(__file__))
     fn = os.path.join(file_dir, 'scrapy2/dongqiudi/items.json')
     with open(fn, 'r', encoding='utf-8') as f:
@@ -94,22 +128,13 @@ def test_check_existence():
     bulk_put(list_news_dict)
 
 
-def dict2es():
-    file_dir = os.path.dirname(os.path.dirname(__file__))
-    fn = os.path.join(file_dir, 'scrapy2/dongqiudi/items.json')
-    with open(fn, 'r', encoding='utf-8') as f:
-        list_news_dict = json.load(f)
-
-    bulk_put(list_news_dict)
-
-
-def search_data():
+def search_data_size():
     res = requests.get(
         'http://localhost:9200/dongqiudi/_search?size=5&from=10&pretty')
     pprint.pprint(json.loads(res.content))
 
 
-def search_data2():
+def search_data_match_all():
     p = es.search(index="dongqiudi",
                   doc_type="news",
                   body={"_source": ["title", "description"],
@@ -119,7 +144,7 @@ def search_data2():
     return p
 
 
-def search_data3():
+def search_data_match():
     p = es.search(index="dongqiudi",
                   doc_type="news",
                   body={"_source": ["title", "description"],
@@ -136,31 +161,6 @@ def count_data():
     pprint.pprint(info)
     logger.info(
         'There are {} records in dongqiudi index'.format(info['count']))
-
-
-def set_logger():
-    # for logging
-
-    log_path = 'logs/dongqiudi.txt'  # ''
-
-    program = os.path.basename(sys.argv[0])
-    logger = logging.getLogger(program)
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    if log_path:
-        file_handler = logging.FileHandler(log_path)
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    else:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-    return logger
 
 
 def del_dongqiudi():
@@ -184,8 +184,8 @@ def sentence2tags(st):
     return tags
 
 
-def update_data():
-    news_dict = search_data2()
+def update_key_tags():
+    news_dict = search_data_match_all()
     news_list = news_dict['hits']['hits']
     for news in news_list:
         key = news['_source']['title'] + news['_source'].get(
@@ -223,16 +223,16 @@ if __name__ == '__main__':
 
     # dict2es()
 
-    # search_data()
+    # search_data_size()
 
     # count_data()
 
-    # test_check_existence()
+    # append_data()
 
-    # update_data()
+    # update_key_tags()
 
     # view_mapping()
 
     # word_cloud()
 
-    search_data3()
+    search_data_match()
