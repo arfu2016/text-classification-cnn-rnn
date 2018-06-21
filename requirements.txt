@@ -11,3 +11,4 @@ requests
 elasticsearch
 scrapy
 jieba
+cachetools
