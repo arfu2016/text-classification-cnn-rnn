@@ -1,9 +1,9 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : add_dongqiudi.py
+@Module    : dongqiudi_two_gram.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 6/15/18 4:53 PM
-@Desc      : dongqiudi的es添加数据，词云分析和词汇匹配
+@Created   : 6/22/18 2:08 PM
+@Desc      : 
 """
 import json
 import logging
@@ -11,11 +11,15 @@ import os
 import pprint
 import string
 import sys
+import re
 
 import elasticsearch
-import jieba.analyse
+import jieba
 import requests
 from elasticsearch.helpers import bulk
+from cachetools import cached, TTLCache
+
+cache = TTLCache(maxsize=100, ttl=300)
 
 es = elasticsearch.Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
@@ -262,25 +266,33 @@ def clean_sentence(st):
     return clean
 
 
-def sentence2tags(st):
-    tags = jieba.analyse.extract_tags(st, topK=100,
-                                      allowPOS=(
-                                          'eng', 'n', 'ns', 'nr', 'nt', 'nz',
-                                          'vn', 'vi', 'vq'))
-    # 一方面，用tf-idf提取句中关键词，另一方面，只取句中的英文、名词和动词
+@cached(cache)
+def construct_stop_words():
+    in_tab = string.punctuation + '。，“”‘’（）：；？！·—《》、'
+    pt = set(p for p in in_tab)
     stop_words = {'全场', '出线', '球帝', '图集', '代表', '世界', '足球'}
-    tags = [tag for tag in tags if tag not in stop_words]
-    return tags
+    stop_words.update({'的', })
+    stop_words.update(pt)
+    return stop_words
 
 
-def update_key_tags():
+def sentence2tags(st):
+    stop_words = construct_stop_words()
+    tags = filter(lambda x: x not in stop_words and len(x.strip()) > 0,
+                  jieba.cut(st))
+    tags = [tag for tag in tags if re.search(r"^\d+$", tag) is None]
+    tag2gram = [' '.join(tags[i:i+2]) for i in range(len(tags)-1)]
+    return tag2gram
+
+
+def update_two_gram_tags():
     news_dict = search_data_match_all()
     news_list = news_dict['hits']['hits']
     for news in news_list:
         key = news['_source']['title'] + news['_source'].get(
             'description', [''])
         key = ' '.join(key)
-        update = {"doc": {"key_tags": sentence2tags(key)}}
+        update = {"doc": {"two_gram_tags": sentence2tags(key)}}
         es.update(index='dongqiudi', doc_type='news', id=news['_id'],
                   body=update)
         # , version=1, version_type='internal'
@@ -298,7 +310,7 @@ def word_cloud():
                             "aggs": {
                                 "tagcloud": {
                                     "terms": {
-                                        "field": "key_tags.keyword",
+                                        "field": "two_gram_tags.keyword",
                                         "size": 20
                                     }
                                 }
@@ -321,7 +333,7 @@ def word_cloud2():
                         "aggs": {
                             "wordcloud": {
                                 "terms": {
-                                    "field": "key_tags.keyword",
+                                    "field": "two_gram_tags.keyword",
                                     "size": 20
                                 }
                             }
@@ -344,7 +356,7 @@ def word_cloud3():
                         "aggs": {
                             "wordcloud": {
                                 "terms": {
-                                    "field": "key_tags.keyword",
+                                    "field": "two_gram_tags.keyword",
                                     "size": 20
                                 }
                             }
@@ -354,29 +366,12 @@ def word_cloud3():
 
 
 if __name__ == '__main__':
-    # del_dongqiudi()
 
-    # create_mapping()
-
-    # dict2es()
-
-    # search_data_size()
-
-    # view_mapping()
-
-    # search_data_term()
-
-    # ***********************************************
-
-    # append_data()
-
-    # update_key_tags()
+    # update_two_gram_tags()
 
     # count_data()
 
     # word_cloud()
-
-    # search_data_match()
 
     # word_cloud2()
 
