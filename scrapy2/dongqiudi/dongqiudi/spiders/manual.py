@@ -3,7 +3,9 @@
 @Module    : manual.py
 @Author    : Deco [deco@cubee.com]
 @Created   : 6/15/18 2:05 PM
-@Desc      : 爬取json数据，并存入.json文件中
+@Desc      : 爬取json数据，并存入.json文件中；主要的爬虫文件
+scrapy check manual
+scrapy crawl manual -o items.json
 """
 import socket
 import datetime
@@ -19,6 +21,7 @@ class BasicSpider(scrapy.Spider):
     allowed_domains = ['www.dongqiudi.com']
     start_urls = ['http://www.dongqiudi.com/archives/1?page={}'.format(i)
                   for i in range(1, 11)]
+    # request related
 
     custom_settings = {
         'USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
@@ -28,7 +31,7 @@ class BasicSpider(scrapy.Spider):
     }
 
     def parse(self, response):
-        """This function parses a news page.
+        """This function parses a news page. response related
 
         :param response:
         :return:
