@@ -1,12 +1,13 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : for_map_async.py
+@Module    : concurrent_futures_as_completed.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 7/10/18 1:56 PM
+@Created   : 7/10/18 6:12 PM
 @Desc      : 
 """
 import spacy
-from multiprocessing import Pool
+import time
+from concurrent import futures
 
 
 def pipeline_tagger_parser_ner(cls, st):
@@ -41,23 +42,35 @@ def pipeline_tokenizer(cls, st):
     return 'tokenizer'
 
 
-class RunPipeline:
-
-    def __init__(self, cls, st):
-        self.cls = cls
-        self.st = st
-
-    def __call__(self, func):
-        return func(self.cls, self.st)
+def serial_func(cls, st):
+    for func in [pipeline_tagger_parser_ner, pipeline_tokenizer]:
+        func(cls, st)
 
 
-def map_func_multi_process(cls, st):
-    funcs = [pipeline_tagger_parser_ner, pipeline_tokenizer]
-    with Pool(2) as p:
-        res = p.map_async(RunPipeline(cls, st), funcs)
-        # res.wait()
-        # asyncronization, blocking with res.wait()
-        # nonblocking without res.wait()
+def parallel_func(cls, st):
+    func_list = [serial_func, pipeline_tagger_parser_ner, pipeline_tokenizer]
+    with futures.ProcessPoolExecutor(max_workers=2) as executor:
+        to_do = []
+        for func in func_list:
+            future = executor.submit(func, cls, st)
+            to_do.append(future)
+            # time.sleep(0.001)
+            msg = 'Scheduled for {}: {}'
+            print(msg.format(func.__name__, future))
+
+        time.sleep(2)
+        print('to do list:', to_do)
+
+        results = []
+        for future in futures.as_completed(to_do, timeout=100):
+            res = future.result()
+            msg = '{} result: {}'
+            print(msg.format(future, res))
+            results.append(res)
+
+        print('Is the with part blocked?')
+
+    return len(results)
 
 
 if __name__ == '__main__':
@@ -66,6 +79,6 @@ if __name__ == '__main__':
     cls0 = spacy.util.get_lang_class(lang0)
     st0 = 'This is a sentence'
 
-    map_func_multi_process(cls0, st0)
+    parallel_func(cls0, st0)
 
     print('finished.')

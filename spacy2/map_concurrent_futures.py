@@ -1,12 +1,12 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : for_map_async.py
+@Module    : map_concurrent_futures.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 7/10/18 1:56 PM
+@Created   : 7/10/18 3:14 PM
 @Desc      : 
 """
 import spacy
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
 
 
 def pipeline_tagger_parser_ner(cls, st):
@@ -53,11 +53,16 @@ class RunPipeline:
 
 def map_func_multi_process(cls, st):
     funcs = [pipeline_tagger_parser_ner, pipeline_tokenizer]
-    with Pool(2) as p:
-        res = p.map_async(RunPipeline(cls, st), funcs)
-        # res.wait()
-        # asyncronization, blocking with res.wait()
-        # nonblocking without res.wait()
+    with ProcessPoolExecutor(2) as p:
+        res = p.map(RunPipeline(cls, st), funcs)
+        # future = p.map(RunPipeline(cls, st), funcs)
+        # no future.result()
+        # syncronization, blocking
+    print('Type of future:', type(res))
+    # an iterator or generator
+    # an iterator in which __next__ calls the result method of each future,
+    # so what we get are the results of the futures, and not the
+    # futures themselves.
 
 
 if __name__ == '__main__':

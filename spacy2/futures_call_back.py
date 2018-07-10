@@ -1,8 +1,8 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : for_concurrent_futures.py
+@Module    : futures_call_back.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 7/10/18 1:37 PM
+@Created   : 7/10/18 4:19 PM
 @Desc      : 
 """
 import spacy
@@ -47,18 +47,29 @@ def serial_func(cls, st):
         func(cls, st)
 
 
+def produce_future3_callback(future):
+    def future3_callback():
+        print('future3 has results now.')
+        print(future.result())
+
+    return future3_callback
+
+
+def future_callback(future):
+    print('future3 has results now.')
+    print('The return value is:', future.result())
+
+
 def parallel_func(cls, st, executor):
-    msg = 'Scheduled for {}: {}'
     future = executor.submit(serial_func, cls, st)
     # future.result()
-    # asyncronization, blocking with future.result()
-    # nonblocking without future.result()
-    print(msg.format(serial_func.__name__, future))
     future2 = executor.submit(pipeline_tagger_parser_ner, cls, st)
-    print(msg.format(pipeline_tagger_parser_ner.__name__, future))
     future3 = executor.submit(pipeline_tokenizer, cls, st)
-    print(msg.format(pipeline_tokenizer.__name__, future))
     return future, future2, future3
+
+
+def call_after_parallel(future, callback):
+    future.add_done_callback(callback)
 
 
 if __name__ == '__main__':
@@ -71,14 +82,15 @@ if __name__ == '__main__':
 
     future_res, future2_res, future3_res = parallel_func(cls0, st0,
                                                          multi_process)
+    call_after_parallel(future3_res, future_callback)
 
     print('finished.')
 
-    while True:
-        time.sleep(10)
-        if future3_res.done():
-            break
-        else:
-            print('Future reached? :', future_res.done())
-
-    print('future3 result:', future3_res.result())
+    # while True:
+    #     time.sleep(10)
+    #     if future3_res.done():
+    #         break
+    #     else:
+    #         print('Future reached? :', future_res.done())
+    #
+    # print('future3 result:', future3_res.result())
