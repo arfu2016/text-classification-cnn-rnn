@@ -47,8 +47,15 @@ def serial_func(cls, st):
         func(cls, st)
 
 
+def func4(cls, st):
+    time.sleep(1)
+    print('func4', st)
+
+
 def parallel_func(cls, st):
-    func_list = [serial_func, pipeline_tagger_parser_ner, pipeline_tokenizer]
+    func_list = [serial_func, pipeline_tagger_parser_ner,
+                 pipeline_tokenizer, func4]
+    # with futures.ProcessPoolExecutor() as executor:
     with futures.ProcessPoolExecutor(max_workers=2) as executor:
         to_do = []
         for func in func_list:
@@ -62,13 +69,21 @@ def parallel_func(cls, st):
         print('to do list:', to_do)
 
         results = []
-        for future in futures.as_completed(to_do, timeout=100):
+        print('nonblocking')
+        start = time.perf_counter()
+        # for future in futures.as_completed(to_do, timeout=100):
+        for future in futures.as_completed(to_do):
+            # asyncronization
+            print(time.perf_counter()-start)
+            print('blocking')
             res = future.result()
+            print('nonblocking because future.result() is already finished')
             msg = '{} result: {}'
             print(msg.format(future, res))
             results.append(res)
+            print('to do list:', to_do)
 
-        print('Is the with part blocked?')
+        print('Is this part blocked?')
 
     return len(results)
 

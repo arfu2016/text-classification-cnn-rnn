@@ -57,12 +57,14 @@ def map_func_multi_process(cls, st):
         res = p.map(RunPipeline(cls, st), funcs)
         # future = p.map(RunPipeline(cls, st), funcs)
         # no future.result()
-        # syncronization, blocking
-    print('Type of future:', type(res))
+        # syncronization, nonblocking
+        print('Type of future:', type(res))
     # an iterator or generator
     # an iterator in which __next__ calls the result method of each future,
     # so what we get are the results of the futures, and not the
     # futures themselves.
+        for ele in res:
+            print(ele)
 
 
 if __name__ == '__main__':

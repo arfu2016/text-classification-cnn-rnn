@@ -12,3 +12,4 @@ elasticsearch
 scrapy
 jieba
 cachetools
+tqdm

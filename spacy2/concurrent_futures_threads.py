@@ -1,13 +1,13 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : for_concurrent_futures.py
+@Module    : concurrent_futures_threads.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 7/10/18 1:37 PM
+@Created   : 7/11/18 10:05 AM
 @Desc      : 
 """
 import spacy
 import time
-from concurrent.futures import (ProcessPoolExecutor, ThreadPoolExecutor)
+from concurrent import futures
 
 
 def pipeline_tagger_parser_ner(cls, st):
@@ -47,41 +47,38 @@ def serial_func(cls, st):
         func(cls, st)
 
 
-def parallel_func(cls, st, executor):
-    msg = 'Scheduled for {}: {}'
-    future = executor.submit(serial_func, cls, st)
-    # future.result()
-    # asyncronization, blocking with future.result()
-    # nonblocking without future.result()
-    print(msg.format(serial_func.__name__, future))
-    future2 = executor.submit(pipeline_tagger_parser_ner, cls, st)
-    print(msg.format(pipeline_tagger_parser_ner.__name__, future2))
-    future3 = executor.submit(pipeline_tokenizer, cls, st)
-    print(msg.format(pipeline_tokenizer.__name__, future3))
-    return future, future2, future3
+def parallel_func(cls, st):
+    func_list = [serial_func, pipeline_tagger_parser_ner, pipeline_tokenizer]
+    with futures.ThreadPoolExecutor(max_workers=2) as executor:
+        to_do = []
+        for func in func_list:
+            future = executor.submit(func, cls, st)
+            to_do.append(future)
+            # time.sleep(0.001)
+            msg = 'Scheduled for {}: {}'
+            print(msg.format(func.__name__, future))
+
+        time.sleep(1)
+        print('to do list:', to_do)
+
+        results = []
+        for future in futures.as_completed(to_do, timeout=100):
+            res = future.result()
+            msg = '{} result: {}'
+            print(msg.format(future, res))
+            results.append(res)
+
+        print('Is the with part blocked?')
+
+    return len(results)
 
 
 if __name__ == '__main__':
-
-    multi_process = ProcessPoolExecutor()
-    # multi_process = ThreadPoolExecutor(2)
 
     lang0 = 'en'
     cls0 = spacy.util.get_lang_class(lang0)
     st0 = 'This is a sentence'
 
-    future_res, future2_res, future3_res = parallel_func(cls0, st0,
-                                                         multi_process)
+    parallel_func(cls0, st0)
 
     print('finished.')
-    time.sleep(1)
-    print(future_res, future2_res, future3_res)
-
-    while True:
-        time.sleep(10)
-        if future3_res.done():
-            break
-        else:
-            print('Future reached? :', future_res.done())
-
-    print('future3 result:', future3_res.result())
