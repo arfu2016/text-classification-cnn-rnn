@@ -8,6 +8,7 @@
 import spacy
 import time
 from concurrent import futures
+import tqdm
 
 
 def pipeline_tagger_parser_ner(cls, st):
@@ -71,8 +72,10 @@ def parallel_func(cls, st):
         results = []
         print('nonblocking')
         start = time.perf_counter()
+        done_iter = futures.as_completed(to_do)
+        done_iter = tqdm.tqdm(done_iter, total=len(func_list))
         # for future in futures.as_completed(to_do, timeout=100):
-        for future in futures.as_completed(to_do):
+        for future in done_iter:
             # asyncronization
             print(time.perf_counter()-start)
             print('blocking')
