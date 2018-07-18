@@ -11,7 +11,7 @@ class TCNNConfig(object):
     # seq_length = 600
     num_classes = 30  # 类别数
     # num_classes = 10
-    num_filters = 64  # 卷积核数目
+    num_filters = 64  # 卷积核数目，就是hidden unit数目
     # num_filters = 256
     kernel_size = 5  # 卷积核尺寸
     vocab_size = 1900  # 词汇表大小
@@ -56,6 +56,9 @@ class TextCNN(object):
         with tf.name_scope("cnn"):
             # CNN layer
             conv = tf.layers.conv1d(embedding_inputs, self.config.num_filters, self.config.kernel_size, name='conv')
+            # 默认strides=1, 就好像n-gram扫描一样
+            # 5*64=320, 320*64+64=20544，涉及到这么多的参数
+
             # global max pooling layer
             gmp = tf.reduce_max(conv, reduction_indices=[1], name='gmp')
 
