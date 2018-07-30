@@ -1,10 +1,11 @@
 """
 @Project   : text-classification-cnn-rnn
-@Module    : for_map_async.py
+@Module    : for_map_imap.py
 @Author    : Deco [deco@cubee.com]
-@Created   : 7/10/18 1:56 PM
+@Created   : 7/30/18 4:49 PM
 @Desc      : 
 """
+
 import spacy
 from multiprocessing import Pool
 
@@ -54,11 +55,17 @@ class RunPipeline:
 def map_func_multi_process(cls, st):
     funcs = [pipeline_tagger_parser_ner, pipeline_tokenizer]
     with Pool(2) as p:
-        res = p.map_async(RunPipeline(cls, st), funcs)
-        res.wait()  # res is executed here like session.run()
+        res = p.imap(RunPipeline(cls, st), funcs)
+        # res.wait()
         # asyncronization, blocking with res.wait()
         # nonblocking without res.wait(), but session.run() will not
-        # be executed here
+        # be executed
+        # return res
+        # not working, res must be executed before return
+        for item in res:  # 用next或in可以驱动iterator的session.run()的调用
+            # pass
+            # print(item)
+            yield item
 
 
 if __name__ == '__main__':
@@ -67,6 +74,10 @@ if __name__ == '__main__':
     cls0 = spacy.util.get_lang_class(lang0)
     st0 = 'This is a sentence'
 
-    map_func_multi_process(cls0, st0)
+    # map_func_multi_process(cls0, st0)
+
+    for value in map_func_multi_process(cls0, st0):
+        pass
+    # 对于generator，用next或in可以驱动generator的session.run()的调用
 
     print('finished.')
